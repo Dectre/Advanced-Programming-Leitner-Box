@@ -22,9 +22,13 @@ const int WEEKLY = 2;
 const int MONTHLY = 3;
 
 const string MSG_FLASHCARD_ADDED_SUCCESSFULLY = "flashcards added to the daily box";
-const vector<string> MSG_NEXT_DAY = {"Good morning! Today is day ", " of our journey.\n"
-                                    ,"Your current streak is: "
+const vector<string> MSG_NEXT_DAY = {"Good morning! Today is day ", " of our journey.\nYour current streak is: "
                                     , "\nStart reviewing to keep your streak!"};
+const string MSG_CORRECT_ANSWER = "Your answer was correct! Well done, keep it up!";
+const vector<string> MSG_WRONG_ANSWER = {"Your answer was incorrect. Don't worry! The correct answer is: ",
+                                         ". Keep practicing!"};
+const string MSG_FLASHCARD_QUESTION = "Flashcard: ";
+const string MSG_YOUR_ANSWER = "Your Answer: ";
 
 class Flashcard {
 public:
@@ -72,8 +76,19 @@ private:
 class LeitnerBox {
 public:
     LeitnerBox() : streak(0), day(1), boxes(NUM_OF_BOXES) {}
-    void reportStreak();
+    int getStreak() { return streak; };
+    int getDay() { return day; };
     Box& getBox(int boxLevel) { return boxes[boxLevel]; }
+    void incDay() { day+= 1; }
+    void getTodayFlashcards(vector<Flashcard>& todayFlashcards) {
+        for (int i = 3 ; i > -1; i--) {
+            if (day % LEVELS[i] == 0) {
+                for (auto flashcard: getBox(i).getFlashcards()) {
+                    todayFlashcards.push_back(flashcard);
+                }
+            }
+        }
+    }
 
 private:
     vector<Box> boxes;
@@ -104,32 +119,35 @@ void addFlashcard(LeitnerBox& leitnerBox, vector<string> argument) {
         leitnerBox.getBox(DAILY).addFlashcard(newCard);
     }
     cout << MSG_FLASHCARD_ADDED_SUCCESSFULLY << endl;
-    return;
 }
 
-void getTodayFlashcards(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& todayFlashcards) {
-    int numOfDay = days.size();
-    for (int i = 3 ; i > -1; i--) {
-        if (numOfDay % LEVELS[i] == 0) {
-            for (auto flashcard: leitnerBox.getBox(i).getFlashcards()) {
-                todayFlashcards.push_back(flashcard);
-            }
-        }
+bool getAnswer(string answer) {
+    string userAnswer;
+    getline(cin, userAnswer);
+    if (userAnswer.compare(answer) == 0) {
+        cout << MSG_CORRECT_ANSWER << endl;
+        return true;
     }
-    return;
+    cout << MSG_WRONG_ANSWER[0] << answer << MSG_WRONG_ANSWER[1] << endl;
+    return false;
 }
-void reviewFlashcards(LeitnerBox& leitnerBox, vector<Day>& days, vector<string> argument) {
-    vector<Flashcard> todayFlashcards;
-    getTodayFlashcards(leitnerBox, days, todayFlashcards);
-    for (auto flashcard : todayFlashcards) {
-        cout << flashcard.getQuestion() << endl;
-        cout << flashcard.getAnswer() << endl;
+
+void reviewFlashcards(vector<Flashcard>& todayFlashcards, vector<string> argument) {
+    int cardsNum = stoi(argument[1]);
+    for (int i = 0; i < cardsNum ; i++) {
+        Flashcard flashcard = todayFlashcards[i];
+        cout << MSG_FLASHCARD_QUESTION << flashcard.getQuestion() << endl;
+        cout << MSG_YOUR_ANSWER;
+        string correctAnswer = flashcard.getAnswer();
+        getAnswer(correctAnswer);
     }
 }
 
 void nextDay(LeitnerBox& leitnerBox, vector<Day>& days) {
     Day temp;
     days.push_back(temp);
+    leitnerBox.incDay();
+    cout << MSG_NEXT_DAY[0] << leitnerBox.getDay() << MSG_NEXT_DAY [1] << 0 << MSG_NEXT_DAY[2] << endl;
 }
 
 void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
@@ -137,16 +155,19 @@ void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
     while (getline(cin, input)) {
         vector<string> argument = splitStringBy(input, ' ');
         string command = argument[0];
+
+        vector<Flashcard> todayFlashcards;
+        leitnerBox.getTodayFlashcards(todayFlashcards);
+
         if (command == CMD_ADD_FLASHCARD) {
             addFlashcard(leitnerBox, argument);
         }
         if (command == CMD_REVIEW_TODAY) {
-            reviewFlashcards(leitnerBox, days, argument);
+            reviewFlashcards(todayFlashcards, argument);
         }
         if (command == CMD_NEXT_DAY) {
             nextDay(leitnerBox, days);
         }
-
         if (command == CMD_STREAK) { }
         if (command == CMD_GET_REPORT)
         if (command == CMD_GET_PROGRESS_REPORT) { }
