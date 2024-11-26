@@ -67,6 +67,9 @@ public:
     int getCorrectAnswers() { return correctAnswers; }
     int getWrongAnswers() { return wrongAnswers; }
     int getTotalAnswers() {return totalAnswers; }
+    void incCorrectAnswers() { correctAnswers+= 1; }
+    void incWrongAnswers() { wrongAnswers+= 1; }
+    void incTotalAnswers() { totalAnswers+= 1; }
 private:
     int correctAnswers;
     int wrongAnswers;
@@ -78,8 +81,6 @@ public:
     LeitnerBox() : streak(0), day(1), boxes(NUM_OF_BOXES) {}
     int getStreak() { return streak; };
     int getDay() { return day; };
-    Box& getBox(int boxLevel) { return boxes[boxLevel]; }
-    void incDay() { day+= 1; }
     void getTodayFlashcards(vector<Flashcard>& todayFlashcards) {
         for (int i = 3 ; i > -1; i--) {
             if (day % LEVELS[i] == 0) {
@@ -89,6 +90,11 @@ public:
             }
         }
     }
+    void incStreak() { streak+= 1; }
+    void resetStreak() {streak = 0; }
+    Box& getBox(int boxLevel) { return boxes[boxLevel]; }
+    void incDay() { day+= 1; }
+
 
 private:
     vector<Box> boxes;
@@ -124,6 +130,7 @@ void addFlashcard(LeitnerBox& leitnerBox, vector<string> argument) {
 bool getAnswer(string answer) {
     string userAnswer;
     getline(cin, userAnswer);
+
     if (userAnswer.compare(answer) == 0) {
         cout << MSG_CORRECT_ANSWER << endl;
         return true;
@@ -132,22 +139,48 @@ bool getAnswer(string answer) {
     return false;
 }
 
-void reviewFlashcards(vector<Flashcard>& todayFlashcards, vector<string> argument) {
+void grading(Day& day, bool result) {
+    if (result)
+        day.incCorrectAnswers();
+    else
+        day.incWrongAnswers();
+    day.incTotalAnswers();
+}
+
+void reviewFlashcards(vector<Flashcard>& todayFlashcards, vector<Day>& days, vector<string> argument) {
     int cardsNum = stoi(argument[1]);
+    Day today;
     for (int i = 0; i < cardsNum ; i++) {
         Flashcard flashcard = todayFlashcards[i];
         cout << MSG_FLASHCARD_QUESTION << flashcard.getQuestion() << endl;
         cout << MSG_YOUR_ANSWER;
         string correctAnswer = flashcard.getAnswer();
-        getAnswer(correctAnswer);
+        grading(today, getAnswer(correctAnswer));
     }
+    days.push_back(today);
 }
 
 void nextDay(LeitnerBox& leitnerBox, vector<Day>& days) {
     Day temp;
     days.push_back(temp);
+    //checkStreak();
     leitnerBox.incDay();
     cout << MSG_NEXT_DAY[0] << leitnerBox.getDay() << MSG_NEXT_DAY [1] << 0 << MSG_NEXT_DAY[2] << endl;
+}
+
+bool checkRemainingFlashcards(vector<Flashcard>& todayFlashcards){
+    if (todayFlashcards.size() == 0)
+        return true;
+    return false;
+}
+
+void checkStreak(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards) {
+    if (checkRemainingFlashcards(todayFlashcards)){
+        leitnerBox.incStreak();
+        return;
+    }
+    leitnerBox.resetStreak();
+    return;
 }
 
 void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
@@ -163,7 +196,7 @@ void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
             addFlashcard(leitnerBox, argument);
         }
         if (command == CMD_REVIEW_TODAY) {
-            reviewFlashcards(todayFlashcards, argument);
+            reviewFlashcards(todayFlashcards, days, argument);
         }
         if (command == CMD_NEXT_DAY) {
             nextDay(leitnerBox, days);
