@@ -29,6 +29,8 @@ const vector<string> MSG_WRONG_ANSWER = {"Your answer was incorrect. Don't worry
                                          ". Keep practicing!"};
 const string MSG_FLASHCARD_QUESTION = "Flashcard: ";
 const string MSG_YOUR_ANSWER = "Your Answer: ";
+const string MSG_TODAYS_REVIEW = "You’ve completed today’s review! Keep the momentum going and continue\n"
+                                 "building your knowledge, one flashcard at a time!";
 
 class Flashcard {
 public:
@@ -102,6 +104,9 @@ public:
         if (boxLevel != DAILY) {
             boxes[boxLevel - 1].addFlashcard(flashcard);
         }
+        int index = boxes[boxLevel].findFlashcardinBox(flashcard);
+        boxes[boxLevel].removeFlashcard(index);
+
     }
 
     Box& getBox(int boxLevel) { return boxes[boxLevel]; }
@@ -191,7 +196,7 @@ void grading(Day& day, bool result) {
 
 void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards, vector<Day>& days, vector<string> argument) {
     int cardsNum = stoi(argument[1]);
-    Day today;
+    Day& today = days[leitnerBox.getDay() - 1];
     for (int i = 0; i < cardsNum ; i++) {
         Flashcard flashcard = todayFlashcards[i];
         cout << MSG_FLASHCARD_QUESTION << flashcard.getQuestion() << endl;
@@ -201,15 +206,20 @@ void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards
         grading(today, result);
         handleTransfers(leitnerBox, result, flashcard);
     }
-    days.push_back(today);
+    cout << MSG_TODAYS_REVIEW << endl;
 }
-
+void checkStreak(LeitnerBox& leitnerBox, vector<Day>& days) {
+    int index = leitnerBox.getDay() - 1;
+    if (days[index].getTotalAnswers() > 0)
+        leitnerBox.incStreak();
+    else
+        leitnerBox.resetStreak();
+}
 void nextDay(LeitnerBox& leitnerBox, vector<Day>& days) {
-    Day temp;
-    days.push_back(temp);
-    //checkStreak();
+    checkStreak(leitnerBox, days);
     leitnerBox.incDay();
-    cout << MSG_NEXT_DAY[0] << leitnerBox.getDay() << MSG_NEXT_DAY [1] << 0 << MSG_NEXT_DAY[2] << endl;
+    days.push_back(Day());
+    cout << MSG_NEXT_DAY[0] << leitnerBox.getDay() << MSG_NEXT_DAY [1] << leitnerBox.getStreak() << MSG_NEXT_DAY[2] << endl;
 }
 
 bool checkRemainingFlashcards(vector<Flashcard>& todayFlashcards){
@@ -218,13 +228,8 @@ bool checkRemainingFlashcards(vector<Flashcard>& todayFlashcards){
     return false;
 }
 
-void checkStreak(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards) {
-    if (checkRemainingFlashcards(todayFlashcards)){
-        leitnerBox.incStreak();
-        return;
-    }
-    leitnerBox.resetStreak();
-    return;
+void handleRemainingFlashcards(){
+
 }
 
 void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
@@ -253,6 +258,7 @@ void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
 
 int main() {
     LeitnerBox leitnerBox;
-    vector<Day> days;
+    Day temp;
+    vector<Day> days = {temp};
     handleInput(leitnerBox, days);
 }
