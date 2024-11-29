@@ -32,6 +32,7 @@ const string MSG_YOUR_ANSWER = "Your answer: ";
 const string MSG_TODAYS_REVIEW = "You’ve completed today’s review! Keep the momentum going and continue building your knowledge, one flashcard at a time!";
 const vector<string> MSG_STREAK = {"Your current streak is: ",
                                   "\nKeep going!"};
+const vector<string> MSG_REPORT = {"Day: ",  "Correct Answers: ", "Incorrect Answers: ", "Total: ", " To "};
 
 class Flashcard {
 public:
@@ -244,6 +245,26 @@ void nextDay(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& today
 void showStreak(LeitnerBox& leitnerBox) {
     cout << MSG_STREAK[0] << leitnerBox.getStreak() << MSG_STREAK[1] << endl;
 }
+void displayReport(int start, int end, int correct, int wrong, int total) {
+    if (start != end)
+        cout << MSG_REPORT[0] << start+1 << MSG_REPORT[4] << end+1 << endl;
+    else
+        cout << MSG_REPORT[0] << start+1 << endl;
+    cout << MSG_REPORT[1] << correct << endl;
+    cout << MSG_REPORT[2] << wrong << endl;
+    cout << MSG_REPORT[3] << total << endl;
+}
+
+void getReport(vector<Day>& days, vector<string> argument){
+    int start = stoi(argument[1]) - 1; int end = stoi(argument[2]) - 1;
+    int sumOfCorrect = 0; int sumOfWrong = 0; int sumOfTotal = 0;
+    for (int i = start; i <= end; i++) {
+        sumOfCorrect+= days[i].getCorrectAnswers();
+        sumOfWrong+= days[i].getWrongAnswers();
+        sumOfTotal+= days[i].getTotalAnswers();
+    }
+    displayReport(start, end, sumOfCorrect, sumOfWrong, sumOfTotal);
+}
 
 void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
     string input;
@@ -254,19 +275,16 @@ void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
         vector<Flashcard> todayFlashcards;
         leitnerBox.getTodayFlashcards(todayFlashcards);
 
-        if (command == CMD_ADD_FLASHCARD) {
+        if (command == CMD_ADD_FLASHCARD)
             addFlashcard(leitnerBox, argument);
-        }
-        if (command == CMD_REVIEW_TODAY) {
+        if (command == CMD_REVIEW_TODAY)
             reviewFlashcards(leitnerBox, todayFlashcards, days, argument);
-        }
-        if (command == CMD_NEXT_DAY) {
+        if (command == CMD_NEXT_DAY)
             nextDay(leitnerBox, days, todayFlashcards);
-        }
-        if (command == CMD_STREAK) {
+        if (command == CMD_STREAK)
             showStreak(leitnerBox);
-        }
         if (command == CMD_GET_REPORT)
+            getReport(days, argument);
         if (command == CMD_GET_PROGRESS_REPORT) { }
     }
 }
