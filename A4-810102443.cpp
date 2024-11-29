@@ -64,7 +64,7 @@ public:
     void addFlashcard(Flashcard card) { flashcards.push_back(card); }
     void removeFlashcard(size_t index) { flashcards.erase(flashcards.begin() + index); }
     int findFlashcardinBox(Flashcard card) {
-        for (int i = 0; i <= flashcards.size(); i++) {
+        for (int i = 0; i < flashcards.size(); i++) {
             if (flashcards[i].cardCompare(card)) return i;
         }
         return -1;
@@ -220,6 +220,7 @@ void grading(Day& day, bool result) {
 }
 
 void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards, vector<Day>& days, vector<string> argument) {
+    leitnerBox.incStreak();
     int cardsNum = stoi(argument[1]);
     Day& today = days[leitnerBox.getDay() - 1];
     for (int i = 0; i < cardsNum ; i++) {
@@ -230,7 +231,7 @@ void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards
         bool result = getAnswer(leitnerBox, correctAnswer);
         grading(today, result);
         handleTransfers(leitnerBox, result, flashcard);
-        todayFlashcards.erase(todayFlashcards.begin() + i);
+        todayFlashcards.erase(todayFlashcards.begin());
     }
     cout << MSG_TODAYS_REVIEW << endl;
 }
@@ -238,9 +239,7 @@ void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards
 
 void checkStreak(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& todayFlashcards) {
     int index = leitnerBox.getDay() - 1;
-    if (days[index].getTotalAnswers() > 0)
-        leitnerBox.incStreak();
-    else {
+    if (days[index].getTotalAnswers() == 0) {
         leitnerBox.resetStreak();
         leitnerBox.downgradeFlashcardsOnZeroStreak();
     }
