@@ -98,9 +98,10 @@ public:
     }
     void upgradeFlashcard(Flashcard flashcard) {
         int boxLevel = findBox(flashcard);
-        if (boxLevel != MONTHLY) {
+        if (boxLevel != MONTHLY)
             boxes[boxLevel + 1].addFlashcard(flashcard);
-        }
+        else
+            incMasteredFlashcards();
         int index = boxes[boxLevel].findFlashcardinBox(flashcard);
         boxes[boxLevel].removeFlashcard(index);
     }
@@ -188,7 +189,6 @@ bool getAnswer(LeitnerBox& leitnerBox, string answer) {
     getline(cin, userAnswer);
     if (userAnswer.compare(answer) == 0) {
         cout << MSG_CORRECT_ANSWER << endl;
-        leitnerBox.incMasteredFlashcards();
         return true;
     }
     cout << MSG_WRONG_ANSWER[0] << answer << MSG_WRONG_ANSWER[1] << endl;
