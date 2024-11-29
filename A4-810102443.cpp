@@ -24,13 +24,14 @@ const int MONTHLY = 3;
 const string MSG_FLASHCARD_ADDED_SUCCESSFULLY = "flashcards added to the daily box";
 const vector<string> MSG_NEXT_DAY = {"Good morning! Today is day ", " of our journey.\nYour current streak is: "
                                     , "\nStart reviewing to keep your streak!"};
-const string MSG_CORRECT_ANSWER = "Your answer was correct! Well done, keep it up!";
-const vector<string> MSG_WRONG_ANSWER = {"Your answer was incorrect. Don't worry! The correct answer is: ",
+const string MSG_CORRECT_ANSWER = "\nYour answer was correct! Well done, keep it up!";
+const vector<string> MSG_WRONG_ANSWER = {"\nYour answer was incorrect. Don't worry! The correct answer is: ",
                                          ". Keep practicing!"};
 const string MSG_FLASHCARD_QUESTION = "Flashcard: ";
-const string MSG_YOUR_ANSWER = "Your Answer: ";
-const string MSG_TODAYS_REVIEW = "You’ve completed today’s review! Keep the momentum going and continue\n"
-                                 "building your knowledge, one flashcard at a time!";
+const string MSG_YOUR_ANSWER = "Your answer: ";
+const string MSG_TODAYS_REVIEW = "You’ve completed today’s review! Keep the momentum going and continue building your knowledge, one flashcard at a time!";
+const vector<string> MSG_STREAK = {"Your current streak is: ",
+                                  "\nKeep going!"};
 
 class Flashcard {
 public:
@@ -108,7 +109,21 @@ public:
         boxes[boxLevel].removeFlashcard(index);
 
     }
-
+    void downgradeBox(int boxIndex) {
+        auto flashcards = boxes[boxIndex].getFlashcards();
+        for (int i = 0; i < size(flashcards); i++)  {
+            boxes[boxIndex - 1].addFlashcard(flashcards[i]);
+            boxes[i].removeFlashcard(i);
+        }
+    }
+    void downgradeFlashcardsOnZeroStreak() {
+        int today = getDay();
+        for (int i = 1; i < NUM_OF_BOXES ; i++) {
+            if (today % LEVELS[i] == 0) {
+                downgradeBox(i);
+            }
+        }
+    }
     Box& getBox(int boxLevel) { return boxes[boxLevel]; }
     void incStreak() { streak+= 1; }
     void resetStreak() {streak = 0; }
@@ -163,7 +178,6 @@ void addFlashcard(LeitnerBox& leitnerBox, vector<string> argument) {
 bool getAnswer(string answer) {
     string userAnswer;
     getline(cin, userAnswer);
-
     if (userAnswer.compare(answer) == 0) {
         cout << MSG_CORRECT_ANSWER << endl;
         return true;
@@ -208,28 +222,27 @@ void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards
     }
     cout << MSG_TODAYS_REVIEW << endl;
 }
-void checkStreak(LeitnerBox& leitnerBox, vector<Day>& days) {
+
+
+void checkStreak(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& todayFlashcards) {
     int index = leitnerBox.getDay() - 1;
     if (days[index].getTotalAnswers() > 0)
         leitnerBox.incStreak();
-    else
+    else {
         leitnerBox.resetStreak();
+        leitnerBox.downgradeFlashcardsOnZeroStreak();
+    }
 }
-void nextDay(LeitnerBox& leitnerBox, vector<Day>& days) {
-    checkStreak(leitnerBox, days);
+
+void nextDay(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& todayFlashcards) {
+    checkStreak(leitnerBox, days, todayFlashcards);
     leitnerBox.incDay();
     days.push_back(Day());
     cout << MSG_NEXT_DAY[0] << leitnerBox.getDay() << MSG_NEXT_DAY [1] << leitnerBox.getStreak() << MSG_NEXT_DAY[2] << endl;
 }
 
-bool checkRemainingFlashcards(vector<Flashcard>& todayFlashcards){
-    if (todayFlashcards.size() == 0)
-        return true;
-    return false;
-}
-
-void handleRemainingFlashcards(){
-
+void showStreak(LeitnerBox& leitnerBox) {
+    cout << MSG_STREAK[0] << leitnerBox.getStreak() << MSG_STREAK[1] << endl;
 }
 
 void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
@@ -248,9 +261,11 @@ void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
             reviewFlashcards(leitnerBox, todayFlashcards, days, argument);
         }
         if (command == CMD_NEXT_DAY) {
-            nextDay(leitnerBox, days);
+            nextDay(leitnerBox, days, todayFlashcards);
         }
-        if (command == CMD_STREAK) { }
+        if (command == CMD_STREAK) {
+            showStreak(leitnerBox);
+        }
         if (command == CMD_GET_REPORT)
         if (command == CMD_GET_PROGRESS_REPORT) { }
     }
