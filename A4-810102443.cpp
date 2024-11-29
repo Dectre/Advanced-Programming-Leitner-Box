@@ -35,8 +35,7 @@ const vector<string> MSG_STREAK = {"Your current streak is: ",
 const vector<string> MSG_REPORT = {"Day: ",  "Correct Answers: ", "Incorrect Answers: ", "Total: ", " to "};
 const vector<string> MSG_PROGRESS_REPORT = {"Challenge Progress Report:\n", "Day of the Challenge: ",
                                             "Streak: ", "Total Days Participated: ", "Mastered Flashcards: ",
-                                            "\nKeep up the great work! You're making steady progress toward "
-                                            "mastering your flashcards."};
+                                            "\nKeep up the great work! You're making steady progress toward mastering your flashcards."};
 
 class Flashcard {
 public:
@@ -101,7 +100,7 @@ public:
         if (boxLevel != MONTHLY)
             boxes[boxLevel + 1].addFlashcard(flashcard);
         else
-            incMasteredFlashcards();
+            masteredFlashcards += 1;
         int index = boxes[boxLevel].findFlashcardinBox(flashcard);
         boxes[boxLevel].removeFlashcard(index);
     }
@@ -110,10 +109,9 @@ public:
         int boxLevel = findBox(flashcard);
         if (boxLevel != DAILY) {
             boxes[boxLevel - 1].addFlashcard(flashcard);
+            int index = boxes[boxLevel].findFlashcardinBox(flashcard);
+            boxes[boxLevel].removeFlashcard(index);
         }
-        int index = boxes[boxLevel].findFlashcardinBox(flashcard);
-        boxes[boxLevel].removeFlashcard(index);
-
     }
     void downgradeBox(int boxIndex) {
         auto flashcards = boxes[boxIndex].getFlashcards();
@@ -130,18 +128,22 @@ public:
             }
         }
     }
+    void downgradeRemainingFlashcards(vector<Flashcard>& remainingFlashcards) {
+        for (auto flashcard : remainingFlashcards) {
+            downgradeFlashcard(flashcard);
+        }
+    }
     Box& getBox(int boxLevel) { return boxes[boxLevel]; }
     int getMasteredFlashcards() { return masteredFlashcards; }
     void incStreak() { streak+= 1; }
     void resetStreak() {streak = 0; }
     void incDay() { day+= 1; }
-    void incMasteredFlashcards() { masteredFlashcards+= 1; }
 
 private:
     vector<Box> boxes;
     int streak;
     int day;
-    int masteredFlashcards;
+    int masteredFlashcards = 0;
 };
 
 class Day {
@@ -221,13 +223,14 @@ void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards
     int cardsNum = stoi(argument[1]);
     Day& today = days[leitnerBox.getDay() - 1];
     for (int i = 0; i < cardsNum ; i++) {
-        Flashcard flashcard = todayFlashcards[i];
+        Flashcard flashcard = todayFlashcards[0];
         cout << MSG_FLASHCARD_QUESTION << flashcard.getQuestion() << endl;
         cout << MSG_YOUR_ANSWER;
         string correctAnswer = flashcard.getAnswer();
         bool result = getAnswer(leitnerBox, correctAnswer);
         grading(today, result);
         handleTransfers(leitnerBox, result, flashcard);
+        todayFlashcards.erase(todayFlashcards.begin() + i);
     }
     cout << MSG_TODAYS_REVIEW << endl;
 }
@@ -245,6 +248,8 @@ void checkStreak(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& t
 
 void nextDay(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& todayFlashcards) {
     checkStreak(leitnerBox, days, todayFlashcards);
+    if (! (todayFlashcards.empty()) )
+        leitnerBox.downgradeRemainingFlashcards(todayFlashcards);
     leitnerBox.incDay();
     days.push_back(Day());
     cout << MSG_NEXT_DAY[0] << leitnerBox.getDay() << MSG_NEXT_DAY [1] << leitnerBox.getStreak() << MSG_NEXT_DAY[2] << endl;
