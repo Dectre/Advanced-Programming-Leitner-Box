@@ -12,7 +12,7 @@ const string CMD_GET_REPORT = "get_report";
 const string CMD_GET_PROGRESS_REPORT = "get_progress_report";
 const string CMD_NEXT_DAY = "next_day";
 
-const vector<int> LEVELS = {1, 3, 7, 10};
+const vector<int> LEVELS = {1, 3, 7, 30};
 
 const int NUM_OF_BOXES = 4;
 
@@ -23,7 +23,7 @@ const int MONTHLY = 3;
 
 const string MSG_FLASHCARD_ADDED_SUCCESSFULLY = "flashcards added to the daily box";
 const vector<string> MSG_NEXT_DAY = {"Good morning! Today is day ", " of our journey.\nYour current streak is: "
-                                    , "\nStart reviewing to keep your streak!"};
+        , "\nStart reviewing to keep your streak!"};
 const string MSG_CORRECT_ANSWER = "\nYour answer was correct! Well done, keep it up!";
 const vector<string> MSG_WRONG_ANSWER = {"\nYour answer was incorrect. Don't worry! The correct answer is: ",
                                          ". Keep practicing!"};
@@ -31,8 +31,12 @@ const string MSG_FLASHCARD_QUESTION = "Flashcard: ";
 const string MSG_YOUR_ANSWER = "Your answer: ";
 const string MSG_TODAYS_REVIEW = "You’ve completed today’s review! Keep the momentum going and continue building your knowledge, one flashcard at a time!";
 const vector<string> MSG_STREAK = {"Your current streak is: ",
-                                  "\nKeep going!"};
-const vector<string> MSG_REPORT = {"Day: ",  "Correct Answers: ", "Incorrect Answers: ", "Total: ", " To "};
+                                   "\nKeep going!"};
+const vector<string> MSG_REPORT = {"Day: ",  "Correct Answers: ", "Incorrect Answers: ", "Total: ", " to "};
+const vector<string> MSG_PROGRESS_REPORT = {"Challenge Progress Report:\n", "Day of the Challenge: ",
+                                            "Streak: ", "Total Days Participated: ", "Mastered Flashcards: ",
+                                            "\nKeep up the great work! You're making steady progress toward "
+                                            "mastering your flashcards."};
 
 class Flashcard {
 public:
@@ -61,10 +65,10 @@ public:
     void addFlashcard(Flashcard card) { flashcards.push_back(card); }
     void removeFlashcard(size_t index) { flashcards.erase(flashcards.begin() + index); }
     int findFlashcardinBox(Flashcard card) {
-       for (int i = 0; i <= flashcards.size(); i++) {
-           if (flashcards[i].cardCompare(card)) return i;
-       }
-       return -1;
+        for (int i = 0; i <= flashcards.size(); i++) {
+            if (flashcards[i].cardCompare(card)) return i;
+        }
+        return -1;
     }
 private:
     vector<Flashcard> flashcards;
@@ -114,7 +118,7 @@ public:
         auto flashcards = boxes[boxIndex].getFlashcards();
         for (int i = 0; i < size(flashcards); i++)  {
             boxes[boxIndex - 1].addFlashcard(flashcards[i]);
-            boxes[i].removeFlashcard(i);
+            boxes[boxIndex].removeFlashcard(i);
         }
     }
     void downgradeFlashcardsOnZeroStreak() {
@@ -126,14 +130,17 @@ public:
         }
     }
     Box& getBox(int boxLevel) { return boxes[boxLevel]; }
+    int getMasteredFlashcards() { return masteredFlashcards; }
     void incStreak() { streak+= 1; }
     void resetStreak() {streak = 0; }
     void incDay() { day+= 1; }
+    void incMasteredFlashcards() { masteredFlashcards+= 1; }
 
 private:
     vector<Box> boxes;
     int streak;
     int day;
+    int masteredFlashcards;
 };
 
 class Day {
@@ -176,11 +183,12 @@ void addFlashcard(LeitnerBox& leitnerBox, vector<string> argument) {
     cout << MSG_FLASHCARD_ADDED_SUCCESSFULLY << endl;
 }
 
-bool getAnswer(string answer) {
+bool getAnswer(LeitnerBox& leitnerBox, string answer) {
     string userAnswer;
     getline(cin, userAnswer);
     if (userAnswer.compare(answer) == 0) {
         cout << MSG_CORRECT_ANSWER << endl;
+        leitnerBox.incMasteredFlashcards();
         return true;
     }
     cout << MSG_WRONG_ANSWER[0] << answer << MSG_WRONG_ANSWER[1] << endl;
@@ -217,7 +225,7 @@ void reviewFlashcards(LeitnerBox& leitnerBox, vector<Flashcard>& todayFlashcards
         cout << MSG_FLASHCARD_QUESTION << flashcard.getQuestion() << endl;
         cout << MSG_YOUR_ANSWER;
         string correctAnswer = flashcard.getAnswer();
-        bool result = getAnswer(correctAnswer);
+        bool result = getAnswer(leitnerBox, correctAnswer);
         grading(today, result);
         handleTransfers(leitnerBox, result, flashcard);
     }
@@ -255,7 +263,7 @@ void displayReport(int start, int end, int correct, int wrong, int total) {
     cout << MSG_REPORT[3] << total << endl;
 }
 
-void getReport(vector<Day>& days, vector<string> argument){
+void getReport(vector<Day>& days, vector<string> argument) {
     int start = stoi(argument[1]) - 1; int end = stoi(argument[2]) - 1;
     int sumOfCorrect = 0; int sumOfWrong = 0; int sumOfTotal = 0;
     for (int i = start; i <= end; i++) {
@@ -264,6 +272,23 @@ void getReport(vector<Day>& days, vector<string> argument){
         sumOfTotal+= days[i].getTotalAnswers();
     }
     displayReport(start, end, sumOfCorrect, sumOfWrong, sumOfTotal);
+}
+
+int getParticapatedDays(vector<Day>& days) {
+    int participatedDays = 0;
+    for (auto day : days) {
+        if (day.getTotalAnswers() > 0)
+            participatedDays++;
+    }
+    return participatedDays;
+}
+void displayProgressReport(LeitnerBox& leitnerBox, vector<Day>& days) {
+    cout << MSG_PROGRESS_REPORT[0] << endl;
+    cout << MSG_PROGRESS_REPORT[1] << leitnerBox.getDay() << endl;
+    cout << MSG_PROGRESS_REPORT[2] << leitnerBox.getStreak() << endl;
+    cout << MSG_PROGRESS_REPORT[3] << getParticapatedDays(days) << endl;
+    cout << MSG_PROGRESS_REPORT[4] << leitnerBox.getMasteredFlashcards() << endl;
+    cout << MSG_PROGRESS_REPORT[5] << endl;
 }
 
 void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
@@ -285,7 +310,8 @@ void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
             showStreak(leitnerBox);
         if (command == CMD_GET_REPORT)
             getReport(days, argument);
-        if (command == CMD_GET_PROGRESS_REPORT) { }
+        if (command == CMD_GET_PROGRESS_REPORT)
+            displayProgressReport(leitnerBox, days);
     }
 }
 
