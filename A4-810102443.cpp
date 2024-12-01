@@ -206,7 +206,7 @@ void handleTransfers(LeitnerBox& leitnerBox, bool result, Flashcard flashcard) {
             flashcard.mistakeCorrected();
         }
         else {
-            flashcard.wasMistaken();
+            flashcard.mistake();
         }
     }
 }
@@ -251,6 +251,7 @@ void nextDay(LeitnerBox& leitnerBox, vector<Day>& days, vector<Flashcard>& today
         leitnerBox.downgradeRemainingFlashcards(todayFlashcards);
     leitnerBox.incDay();
     days.push_back(Day());
+    todayFlashcards.clear();
     cout << MSG_NEXT_DAY[0] << leitnerBox.getDay() << MSG_NEXT_DAY [1] << leitnerBox.getStreak() << MSG_NEXT_DAY[2] << endl;
 }
 
@@ -297,12 +298,12 @@ void displayProgressReport(LeitnerBox& leitnerBox, vector<Day>& days) {
 
 void handleInput(LeitnerBox& leitnerBox, vector<Day>& days) {
     string input;
+    vector<Flashcard> todayFlashcards;
     while (getline(cin, input)) {
         vector<string> argument = splitStringBy(input, ' ');
         string command = argument[0];
-
-        vector<Flashcard> todayFlashcards;
-        leitnerBox.getTodayFlashcards(todayFlashcards);
+        if (todayFlashcards.empty())
+            leitnerBox.getTodayFlashcards(todayFlashcards);
 
         if (command == CMD_ADD_FLASHCARD)
             addFlashcard(leitnerBox, argument);
